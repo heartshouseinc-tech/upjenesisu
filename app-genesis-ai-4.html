@@ -1,0 +1,1461 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>APP GENESIS AI - ハーツハウス開発工房</title>
+<style>
+  :root{
+    --bg:#0b131f;
+    --bg2:#0f1a29;
+    --panel:#152233;
+    --panel2:#1b2c42;
+    --line:#26405e;
+    --blue:#4aa3e0;      /* 青写真の線 */
+    --blue-dim:#2d6ea3;
+    --amber:#f0a83a;     /* 溶鉄の火 */
+    --amber-dim:#b97a1e;
+    --ember:#e8621f;     /* 鍛冶の熾火 */
+    --text:#e6eef7;
+    --text-dim:#8ba3bd;
+    --text-faint:#5a7a94;
+    --ok:#3fbf7f;
+    --err:#e5544b;
+    --mono:"SFMono-Regular",Consolas,"Liberation Mono",Menlo,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{height:100%;}
+  body{
+    background:
+      radial-gradient(1200px 600px at 80% -10%, rgba(240,168,58,.06), transparent 60%),
+      radial-gradient(900px 500px at -10% 110%, rgba(74,163,224,.07), transparent 55%),
+      var(--bg);
+    color:var(--text);
+    font-family:"Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic UI",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+  /* ===== ヘッダー ===== */
+  header{
+    position:sticky;top:0;z-index:50;
+    background:linear-gradient(180deg, rgba(11,19,31,.96), rgba(11,19,31,.82));
+    backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--line);
+  }
+  .head-inner{
+    max-width:1080px;margin:0 auto;padding:14px 20px;
+    display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+  }
+  .brand{display:flex;align-items:center;gap:12px;}
+  .anvil{
+    width:38px;height:38px;flex:none;border-radius:9px;
+    background:linear-gradient(145deg,var(--amber),var(--ember));
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 0 18px rgba(232,98,31,.35), inset 0 1px 0 rgba(255,255,255,.3);
+  }
+  .anvil svg{width:22px;height:22px;}
+  .brand h1{
+    font-size:18px;font-weight:800;letter-spacing:.04em;
+    background:linear-gradient(90deg,#fff,#cfe2f5);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .brand .sub{font-size:11px;color:var(--text-dim);letter-spacing:.14em;font-weight:600;}
+  .head-actions{margin-left:auto;display:flex;gap:8px;align-items:center;}
+  .fb-dot{width:8px;height:8px;border-radius:50%;background:var(--text-faint);transition:.3s;}
+  .fb-dot.on{background:var(--ok);box-shadow:0 0 8px var(--ok);}
+  .fb-dot.off{background:var(--err);}
+  .ghost-btn{
+    background:transparent;border:1px solid var(--line);color:var(--text-dim);
+    padding:7px 13px;border-radius:8px;font-size:12.5px;cursor:pointer;font-weight:600;
+    transition:.15s;display:flex;align-items:center;gap:6px;
+  }
+  .ghost-btn:hover{border-color:var(--blue);color:var(--text);}
+
+  /* ===== 工程インジケーター ===== */
+  .rail{max-width:1080px;margin:0 auto;padding:18px 20px 4px;}
+  .steps{display:flex;gap:0;position:relative;}
+  .steps:before{
+    content:"";position:absolute;top:19px;left:6%;right:6%;height:2px;
+    background:var(--line);z-index:0;
+  }
+  .step{
+    flex:1;text-align:center;position:relative;z-index:1;cursor:pointer;
+  }
+  .step .num{
+    width:38px;height:38px;margin:0 auto 7px;border-radius:50%;
+    background:var(--panel);border:2px solid var(--line);
+    display:flex;align-items:center;justify-content:center;
+    font-family:var(--mono);font-weight:700;font-size:14px;color:var(--text-dim);
+    transition:.25s;
+  }
+  .step .lbl{font-size:11.5px;color:var(--text-faint);font-weight:600;letter-spacing:.02em;}
+  .step.active .num{
+    border-color:var(--amber);color:#1a1206;background:var(--amber);
+    box-shadow:0 0 16px rgba(240,168,58,.4);
+  }
+  .step.active .lbl{color:var(--amber);}
+  .step.done .num{border-color:var(--blue);color:var(--blue);background:rgba(74,163,224,.12);}
+  .step.done .lbl{color:var(--blue-dim);}
+
+  /* ===== 本体 ===== */
+  main{max-width:1080px;margin:0 auto;padding:20px;}
+  .panel{
+    display:none;
+    background:linear-gradient(180deg,var(--panel),var(--bg2));
+    border:1px solid var(--line);border-radius:16px;padding:26px;
+    animation:rise .35s ease both;
+  }
+  .panel.show{display:block;}
+  @keyframes rise{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}
+  .panel-head{margin-bottom:20px;}
+  .panel-head .eyebrow{
+    font-family:var(--mono);font-size:11px;color:var(--amber);
+    letter-spacing:.22em;font-weight:700;text-transform:uppercase;
+  }
+  .panel-head h2{font-size:22px;font-weight:800;margin-top:3px;}
+  .panel-head p{color:var(--text-dim);font-size:13.5px;margin-top:5px;}
+
+  /* モード選択カード */
+  .mode-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+  .mode-card{
+    background:var(--panel2);border:1.5px solid var(--line);border-radius:13px;
+    padding:20px 18px;cursor:pointer;transition:.2s;text-align:left;position:relative;overflow:hidden;
+  }
+  .mode-card:hover{border-color:var(--blue);transform:translateY(-2px);}
+  .mode-card.sel{border-color:var(--amber);background:linear-gradient(180deg,rgba(240,168,58,.09),var(--panel2));}
+  .mode-card .ic{font-size:26px;margin-bottom:10px;}
+  .mode-card h3{font-size:15.5px;font-weight:700;margin-bottom:5px;}
+  .mode-card p{font-size:12px;color:var(--text-dim);line-height:1.5;}
+  .mode-card.sel:after{content:"✓";position:absolute;top:11px;right:13px;color:var(--amber);font-weight:800;}
+
+  /* フォーム */
+  label.fld{display:block;margin:16px 0 6px;font-size:13px;font-weight:700;color:var(--text);}
+  label.fld .hint{font-weight:500;color:var(--text-faint);font-size:11.5px;margin-left:6px;}
+  input[type=text],textarea,select{
+    width:100%;background:var(--bg);border:1px solid var(--line);border-radius:9px;
+    color:var(--text);padding:11px 13px;font-size:14px;font-family:inherit;transition:.15s;
+  }
+  textarea{resize:vertical;min-height:90px;line-height:1.6;}
+  input:focus,textarea:focus,select:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(74,163,224,.15);}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  .chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;}
+  .chip{
+    background:var(--bg);border:1px solid var(--line);color:var(--text-dim);
+    padding:6px 12px;border-radius:20px;font-size:12px;cursor:pointer;transition:.15s;
+  }
+  .chip:hover{border-color:var(--blue);color:var(--text);}
+  .chip.on{background:var(--blue-dim);border-color:var(--blue);color:#fff;}
+
+  /* トグル */
+  .toggle-box{
+    display:flex;align-items:center;justify-content:space-between;gap:14px;
+    background:var(--panel2);border:1px solid var(--line);border-radius:11px;
+    padding:14px 16px;margin-top:16px;
+  }
+  .toggle-box .tinfo h4{font-size:13.5px;font-weight:700;}
+  .toggle-box .tinfo p{font-size:11.5px;color:var(--text-dim);margin-top:2px;max-width:640px;}
+  .switch{position:relative;width:50px;height:28px;flex:none;cursor:pointer;}
+  .switch input{opacity:0;width:0;height:0;}
+  .slider{position:absolute;inset:0;background:var(--line);border-radius:28px;transition:.25s;}
+  .slider:before{content:"";position:absolute;height:20px;width:20px;left:4px;top:4px;background:#fff;border-radius:50%;transition:.25s;}
+  .switch input:checked + .slider{background:linear-gradient(90deg,var(--amber-dim),var(--amber));}
+  .switch input:checked + .slider:before{transform:translateX(22px);}
+
+  /* ラジオ・セグメント */
+  .seg{display:inline-flex;background:var(--bg);border:1px solid var(--line);border-radius:9px;padding:3px;gap:3px;}
+  .seg button{
+    background:transparent;border:none;color:var(--text-dim);padding:8px 15px;border-radius:7px;
+    font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:.15s;
+  }
+  .seg button.on{background:var(--blue-dim);color:#fff;}
+
+  /* ボタン */
+  .btn-row{display:flex;gap:12px;margin-top:24px;flex-wrap:wrap;}
+  .btn{
+    border:none;border-radius:10px;padding:12px 22px;font-size:14px;font-weight:700;
+    cursor:pointer;font-family:inherit;transition:.18s;display:inline-flex;align-items:center;gap:8px;
+  }
+  .btn-primary{background:linear-gradient(135deg,var(--amber),var(--ember));color:#1a1206;
+    box-shadow:0 4px 16px rgba(232,98,31,.28);}
+  .btn-primary:hover{filter:brightness(1.08);transform:translateY(-1px);}
+  .btn-primary:disabled{opacity:.5;cursor:not-allowed;transform:none;filter:none;}
+  .btn-sec{background:var(--panel2);color:var(--text);border:1px solid var(--line);}
+  .btn-sec:hover{border-color:var(--blue);}
+  .btn-back{background:transparent;color:var(--text-dim);border:1px solid var(--line);margin-right:auto;}
+  .btn-back:hover{color:var(--text);}
+
+  /* 設計書エディタ */
+  .blueprint{background:var(--bg);border:1px solid var(--line);border-radius:12px;overflow:hidden;}
+  .bp-section{border-bottom:1px solid var(--line);}
+  .bp-section:last-child{border-bottom:none;}
+  .bp-head{padding:12px 16px;background:rgba(74,163,224,.06);font-size:12px;font-weight:700;
+    color:var(--blue);letter-spacing:.08em;display:flex;align-items:center;gap:8px;}
+  .bp-body{padding:14px 16px;}
+  .bp-body textarea{min-height:60px;}
+  .screen-item,.feat-item{display:flex;gap:8px;margin-bottom:8px;align-items:flex-start;}
+  .screen-item input{flex:1;}
+  .del-x{background:var(--panel2);border:1px solid var(--line);color:var(--err);
+    width:34px;height:38px;flex:none;border-radius:8px;cursor:pointer;font-size:16px;}
+  .add-line{background:transparent;border:1px dashed var(--line);color:var(--text-dim);
+    width:100%;padding:8px;border-radius:8px;cursor:pointer;font-size:12.5px;margin-top:4px;}
+  .add-line:hover{border-color:var(--blue);color:var(--text);}
+
+  /* コード生成・出力 */
+  .code-wrap{background:#08101a;border:1px solid var(--line);border-radius:12px;overflow:hidden;}
+  .code-bar{display:flex;align-items:center;gap:10px;padding:9px 14px;background:var(--bg2);border-bottom:1px solid var(--line);}
+  .code-bar .fname{font-family:var(--mono);font-size:12px;color:var(--text-dim);}
+  .code-bar .sz{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--text-faint);}
+  pre.code{margin:0;padding:14px;overflow:auto;max-height:420px;font-family:var(--mono);
+    font-size:12px;line-height:1.55;color:#c8d8e8;white-space:pre;}
+  .review-box{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin-bottom:16px;}
+  .review-box h4{font-size:13px;color:var(--amber);font-weight:700;margin-bottom:8px;letter-spacing:.05em;}
+  .review-box .rv-content{font-size:13.5px;color:var(--text);line-height:1.7;white-space:pre-wrap;}
+
+  /* プレビュー */
+  .preview-frame{width:100%;height:460px;border:1px solid var(--line);border-radius:12px;background:#fff;}
+
+  /* ローディング */
+  .loading{display:flex;flex-direction:column;align-items:center;gap:16px;padding:40px 20px;text-align:center;}
+  .forge{width:60px;height:60px;position:relative;}
+  .forge .spark{position:absolute;inset:0;border:3px solid transparent;border-top-color:var(--amber);
+    border-right-color:var(--ember);border-radius:50%;animation:spin .8s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .loading .msg{color:var(--text-dim);font-size:13.5px;}
+  .loading .msg b{color:var(--amber);}
+  .prog{width:100%;max-width:340px;height:6px;background:var(--bg);border-radius:6px;overflow:hidden;margin-top:4px;}
+  .prog .bar{height:100%;background:linear-gradient(90deg,var(--amber),var(--ember));width:0;transition:.4s;}
+
+  /* トースト */
+  #toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(80px);
+    background:var(--panel2);border:1px solid var(--line);color:var(--text);padding:12px 20px;
+    border-radius:10px;font-size:13.5px;font-weight:600;z-index:200;transition:.3s;box-shadow:0 8px 30px rgba(0,0,0,.5);opacity:0;}
+  #toast.show{transform:translateX(-50%) translateY(0);opacity:1;}
+  #toast.ok{border-color:var(--ok);}
+  #toast.err{border-color:var(--err);}
+
+  /* プロジェクト一覧モーダル */
+  .modal-bg{position:fixed;inset:0;background:rgba(4,8,14,.72);z-index:150;display:none;
+    align-items:flex-start;justify-content:center;padding:40px 16px;backdrop-filter:blur(3px);overflow:auto;}
+  .modal-bg.show{display:flex;}
+  .modal{background:var(--panel);border:1px solid var(--line);border-radius:16px;
+    max-width:640px;width:100%;padding:24px;}
+  .modal h3{font-size:18px;font-weight:800;margin-bottom:4px;}
+  .modal .msub{color:var(--text-dim);font-size:12.5px;margin-bottom:16px;}
+  .proj-item{background:var(--panel2);border:1px solid var(--line);border-radius:10px;
+    padding:13px 15px;margin-bottom:9px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:.15s;}
+  .proj-item:hover{border-color:var(--blue);}
+  .proj-item .pi-body{flex:1;min-width:0;}
+  .proj-item .pi-name{font-size:14px;font-weight:700;}
+  .proj-item .pi-meta{font-size:11.5px;color:var(--text-faint);font-family:var(--mono);margin-top:2px;}
+  .proj-item .pi-tag{font-size:10.5px;padding:3px 8px;border-radius:20px;background:var(--bg);color:var(--blue);border:1px solid var(--line);flex:none;}
+  .empty-state{text-align:center;color:var(--text-faint);padding:30px;font-size:13px;}
+
+  .config-note{background:rgba(229,84,75,.08);border:1px solid rgba(229,84,75,.3);
+    border-radius:10px;padding:12px 15px;margin-bottom:18px;font-size:12.5px;color:#f0b4b0;display:none;}
+  .config-note.show{display:block;}
+  .config-note code{font-family:var(--mono);background:rgba(0,0,0,.3);padding:1px 5px;border-radius:4px;color:var(--amber);}
+
+  /* ===== ログインゲート ===== */
+  .gate{position:fixed;inset:0;z-index:300;background:
+      radial-gradient(1000px 500px at 70% -10%, rgba(240,168,58,.08), transparent 60%),
+      var(--bg);
+    display:flex;align-items:center;justify-content:center;padding:24px;}
+  .gate.hide{display:none;}
+  .gate-card{background:linear-gradient(180deg,var(--panel),var(--bg2));border:1px solid var(--line);
+    border-radius:18px;padding:32px 28px;max-width:380px;width:100%;text-align:center;
+    box-shadow:0 20px 60px rgba(0,0,0,.5);}
+  .gate-card .anvil{width:52px;height:52px;margin:0 auto 16px;border-radius:13px;
+    background:linear-gradient(145deg,var(--amber),var(--ember));display:flex;align-items:center;justify-content:center;
+    box-shadow:0 0 22px rgba(232,98,31,.4);}
+  .gate-card .anvil svg{width:30px;height:30px;}
+  .gate-card h2{font-size:20px;font-weight:800;margin-bottom:4px;}
+  .gate-card .gsub{font-size:12.5px;color:var(--text-dim);margin-bottom:22px;letter-spacing:.05em;}
+  .gate-card input{width:100%;margin-bottom:12px;text-align:left;}
+  .gate-err{color:var(--err);font-size:12.5px;min-height:18px;margin-bottom:6px;text-align:left;}
+  .gate-card .btn{width:100%;justify-content:center;}
+  .gate-note{font-size:11px;color:var(--text-faint);margin-top:16px;line-height:1.5;}
+
+  /* 管理パネル */
+  .admin-row{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;margin-bottom:14px;}
+  .admin-row .f{flex:1;min-width:130px;}
+  .admin-row .f label{display:block;font-size:11.5px;color:var(--text-dim);margin-bottom:4px;font-weight:600;}
+  .user-item{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:11px 14px;
+    margin-bottom:8px;display:flex;align-items:center;gap:10px;}
+  .user-item .ui-body{flex:1;min-width:0;}
+  .user-item .ui-email{font-size:13.5px;font-weight:600;word-break:break-all;}
+  .user-item .ui-meta{font-size:11px;color:var(--text-faint);font-family:var(--mono);margin-top:2px;}
+  .badge{font-size:10px;padding:2px 8px;border-radius:20px;flex:none;font-weight:700;}
+  .badge.admin{background:rgba(240,168,58,.15);color:var(--amber);border:1px solid var(--amber-dim);}
+  .badge.off{background:rgba(229,84,75,.12);color:var(--err);border:1px solid rgba(229,84,75,.4);}
+  .mini-btn{background:var(--bg);border:1px solid var(--line);color:var(--text-dim);
+    padding:5px 10px;border-radius:7px;font-size:11.5px;cursor:pointer;flex:none;}
+  .mini-btn:hover{border-color:var(--blue);color:var(--text);}
+  .temp-pw-box{background:rgba(63,191,127,.08);border:1px solid rgba(63,191,127,.35);border-radius:10px;
+    padding:12px 14px;margin-bottom:12px;font-size:12.5px;color:#a9e6c6;display:none;}
+  .temp-pw-box.show{display:block;}
+  .temp-pw-box code{font-family:var(--mono);background:rgba(0,0,0,.3);padding:2px 8px;border-radius:5px;
+    color:#fff;font-size:14px;letter-spacing:.05em;}
+
+  @media(max-width:720px){
+    .mode-grid{grid-template-columns:1fr;}
+    .row2{grid-template-columns:1fr;}
+    .step .lbl{font-size:10px;}
+    main,.head-inner,.rail{padding-left:14px;padding-right:14px;}
+    .panel{padding:20px 16px;}
+  }
+</style>
+</head>
+<body>
+
+<!-- ===== ログインゲート（新規登録なし・管理者発行制） ===== -->
+<div class="gate" id="gate">
+  <div class="gate-card">
+    <div class="anvil">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#1a1206" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4 10h11l2-3h3v3l-3 2v3H4z"/><path d="M8 18h6"/><path d="M11 15v3"/>
+      </svg>
+    </div>
+    <h2>APP GENESIS AI</h2>
+    <div class="gsub">HEARTS HOUSE 開発工房</div>
+    <input type="text" id="loginEmail" placeholder="メールアドレス" autocomplete="username">
+    <input type="password" id="loginPw" placeholder="パスワード" autocomplete="current-password"
+           onkeydown="if(event.key==='Enter')doLogin()">
+    <div class="gate-err" id="loginErr"></div>
+    <button class="btn btn-primary" id="loginBtn" onclick="doLogin()">ログイン</button>
+    <div class="gate-note">アカウントは管理者が発行します。<br>ログインできない場合は管理者にお問い合わせください。</div>
+  </div>
+</div>
+
+<header>
+  <div class="head-inner">
+    <div class="brand">
+      <div class="anvil" title="工房">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#1a1206" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 10h11l2-3h3v3l-3 2v3H4z"/><path d="M8 18h6"/><path d="M11 15v3"/>
+        </svg>
+      </div>
+      <div>
+        <h1>APP GENESIS AI</h1>
+        <div class="sub">HEARTS HOUSE 開発工房</div>
+      </div>
+    </div>
+    <div class="head-actions">
+      <button class="ghost-btn" id="adminBtn" style="display:none;" onclick="openAdmin()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l7 4v6c0 4-3 7-7 8-4-1-7-4-7-8V6z"/></svg>
+        管理
+      </button>
+      <button class="ghost-btn" onclick="openProjects()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+        保存済み
+      </button>
+      <button class="ghost-btn" id="logoutBtn" style="display:none;" onclick="doLogout()" title="ログアウト">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 17l5-5-5-5M21 12H9M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/></svg>
+      </button>
+      <div class="fb-dot" id="fbDot" title="Firebase接続状態"></div>
+    </div>
+  </div>
+  <div class="rail">
+    <div class="steps" id="steps">
+      <div class="step" data-step="1" onclick="tryGoto(1)"><div class="num">1</div><div class="lbl">モード</div></div>
+      <div class="step" data-step="2" onclick="tryGoto(2)"><div class="num">2</div><div class="lbl">要件</div></div>
+      <div class="step" data-step="3" onclick="tryGoto(3)"><div class="num">3</div><div class="lbl">設計図</div></div>
+      <div class="step" data-step="4" onclick="tryGoto(4)"><div class="num">4</div><div class="lbl">鍛造</div></div>
+      <div class="step" data-step="5" onclick="tryGoto(5)"><div class="num">5</div><div class="lbl">仕上げ</div></div>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="config-note" id="cfgNote">
+    ⚠ Firebaseに接続できていません。ネットワーク状況をご確認ください。接続なしでも生成機能は動作しますが、保存・履歴は無効になります。
+  </div>
+
+  <!-- パネル1: モード -->
+  <section class="panel show" id="p1">
+    <div class="panel-head">
+      <div class="eyebrow">Step 01 — Mode</div>
+      <h2>何を鍛えますか</h2>
+      <p>作業のモードを選んでください。既存アプリの改修・新旧仕様移行にも対応します。</p>
+    </div>
+    <div class="mode-grid">
+      <div class="mode-card" data-mode="new" onclick="selMode('new')">
+        <div class="ic">🆕</div><h3>新規作成</h3>
+        <p>要件から設計図を起こし、単一HTMLアプリをゼロから鍛造します。</p>
+      </div>
+      <div class="mode-card" data-mode="fix" onclick="selMode('fix')">
+        <div class="ic">🔧</div><h3>既存改修</h3>
+        <p>既存HTMLを読み込み、指示に沿って部分修正・機能追加を行います。</p>
+      </div>
+      <div class="mode-card" data-mode="migrate" onclick="selMode('migrate')">
+        <div class="ic">🔄</div><h3>仕様移行</h3>
+        <p>旧 askClaude 仕様を askAI + extractGeminiText の新仕様へ自動変換します。</p>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary" id="p1next" onclick="goto(2)" disabled>次へ 要件入力 →</button>
+    </div>
+  </section>
+
+  <!-- パネル2: 要件 -->
+  <section class="panel" id="p2">
+    <div class="panel-head">
+      <div class="eyebrow">Step 02 — Brief</div>
+      <h2 id="p2title">要件を入力</h2>
+      <p id="p2desc">作りたいアプリの目的と機能を書いてください。詳しいほど設計図の精度が上がります。</p>
+    </div>
+
+    <div id="fixLoad" style="display:none;">
+      <label class="fld">既存HTMLコード<span class="hint">改修・移行の対象を貼り付け、またはファイル選択</span></label>
+      <textarea id="srcCode" placeholder="ここに既存の単一HTMLコードを貼り付け…" style="min-height:120px;font-family:var(--mono);font-size:12px;"></textarea>
+      <div style="margin-top:8px;">
+        <input type="file" id="fileInput" accept=".html,.htm,.txt" style="font-size:12px;color:var(--text-dim);">
+      </div>
+    </div>
+
+    <label class="fld">アプリ名</label>
+    <input type="text" id="appName" placeholder="例: 現場写真タグ付けAI">
+
+    <label class="fld" id="purposeLbl">目的・やりたいこと</label>
+    <textarea id="purpose" placeholder="例: 現場写真をアップすると工程・部位をAIが自動でタグ付けし、Firestoreに整理保存する…"></textarea>
+
+    <div id="featBlock">
+      <label class="fld">主な機能<span class="hint">よく使う機能はタップで追加</span></label>
+      <textarea id="features" placeholder="・機能を箇条書き（1行1機能）&#10;・…"></textarea>
+      <div class="chips" id="featChips"></div>
+    </div>
+
+    <div class="row2" style="margin-top:16px;">
+      <div>
+        <label class="fld">出力形式</label>
+        <div class="seg" id="fmtSeg">
+          <button class="on" data-fmt="html" onclick="selFmt(this)">単一HTML</button>
+          <button data-fmt="pwa" onclick="selFmt(this)">PWA対応</button>
+        </div>
+      </div>
+      <div>
+        <label class="fld">生成方式</label>
+        <div class="seg" id="genSeg">
+          <button class="on" data-gen="single" onclick="selGen(this)">一発生成</button>
+          <button data-gen="split" onclick="selGen(this)">分割生成</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="toggle-box">
+      <div class="tinfo">
+        <h4>🏠 ハーツハウス標準仕様を注入</h4>
+        <p>ES5(var) / fbReady パターン / askAI エンドポイント + x-access-key / extractGeminiText ヘルパー / 既知の禁止事項(useSearch+responseSchema併用禁止 等) を自動でプロンプトに含めます。</p>
+      </div>
+      <label class="switch"><input type="checkbox" id="stdInject" checked><span class="slider"></span></label>
+    </div>
+
+    <div class="toggle-box">
+      <div class="tinfo">
+        <h4>🔐 管理者認証テンプレートを注入</h4>
+        <p>ログインゲート(新規登録なし) / 共通 users コレクション参照 / isAdmin 判定の管理パネル / セカンダリインスタンスでの仮パスワード発行 を生成コードに組み込みます。日報・チャット等と同じアカウントが使い回せます。</p>
+      </div>
+      <label class="switch"><input type="checkbox" id="authInject"><span class="slider"></span></label>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-back" onclick="goto(1)">← 戻る</button>
+      <button class="btn btn-primary" onclick="genDesign()">設計図を起こす →</button>
+    </div>
+  </section>
+
+  <!-- パネル3: 設計図 -->
+  <section class="panel" id="p3">
+    <div class="panel-head">
+      <div class="eyebrow">Step 03 — Blueprint</div>
+      <h2>設計図</h2>
+      <p>AIが起こした設計図です。自由に編集・追記してから鍛造に進んでください。</p>
+    </div>
+    <div id="designLoading" class="loading" style="display:none;">
+      <div class="forge"><div class="spark"></div></div>
+      <div class="msg"><b>設計図</b>を製図中…</div>
+    </div>
+    <div id="blueprintEdit"></div>
+    <div class="btn-row" id="p3btns" style="display:none;">
+      <button class="btn btn-back" onclick="goto(2)">← 要件へ</button>
+      <button class="btn btn-sec" onclick="genDesign()">🔄 再製図</button>
+      <button class="btn btn-primary" onclick="goto(4);startForge()">この設計で鍛造 →</button>
+    </div>
+  </section>
+
+  <!-- パネル4: 鍛造(コード生成) -->
+  <section class="panel" id="p4">
+    <div class="panel-head">
+      <div class="eyebrow">Step 04 — Forge</div>
+      <h2>鍛造</h2>
+      <p>設計図をもとにコードを生成します。</p>
+    </div>
+    <div id="forgeLoading" class="loading">
+      <div class="forge"><div class="spark"></div></div>
+      <div class="msg" id="forgeMsg"><b>コード</b>を鍛造中…</div>
+      <div class="prog"><div class="bar" id="forgeBar"></div></div>
+    </div>
+    <div id="forgeDone" style="display:none;">
+      <div class="code-wrap">
+        <div class="code-bar">
+          <span class="fname" id="forgeFname">app.html</span>
+          <span class="sz" id="forgeSz"></span>
+        </div>
+        <pre class="code" id="forgeCode"></pre>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-back" onclick="goto(3)">← 設計図へ</button>
+        <button class="btn btn-sec" onclick="startForge()">🔄 再鍛造</button>
+        <button class="btn btn-primary" onclick="goto(5);startReview()">仕上げ・レビュー →</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- パネル5: 仕上げ -->
+  <section class="panel" id="p5">
+    <div class="panel-head">
+      <div class="eyebrow">Step 05 — Finish</div>
+      <h2>仕上げ</h2>
+      <p>AIレビュー結果と出力です。コピー・プレビュー・ダウンロード・保存ができます。</p>
+    </div>
+    <div id="reviewLoading" class="loading">
+      <div class="forge"><div class="spark"></div></div>
+      <div class="msg"><b>AI</b>が自己レビュー中…</div>
+    </div>
+    <div id="reviewDone" style="display:none;">
+      <div class="review-box">
+        <h4>🔍 AIレビュー <button class="ghost-btn" style="padding:3px 10px;font-size:11px;margin-left:8px;" onclick="startReview()">🔄 再レビュー</button></h4>
+        <div class="rv-content" id="reviewText"></div>
+      </div>
+      <div class="btn-row" style="margin-top:0;">
+        <button class="btn btn-sec" onclick="copyCode()">📋 コードをコピー</button>
+        <button class="btn btn-sec" onclick="togglePreview()">▶ プレビュー</button>
+        <button class="btn btn-sec" onclick="downloadCode()">⬇ ダウンロード</button>
+        <button class="btn btn-primary" onclick="saveProject()">💾 工房に保存</button>
+      </div>
+      <div id="previewArea" style="display:none;margin-top:16px;">
+        <iframe class="preview-frame" id="previewFrame"></iframe>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-back" onclick="goto(4)">← 鍛造へ</button>
+        <button class="btn btn-sec" onclick="resetAll()">🆕 新しい工作を始める</button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- プロジェクト一覧モーダル -->
+<div class="modal-bg" id="projModal" onclick="if(event.target===this)closeProjects()">
+  <div class="modal">
+    <h3>保存済みプロジェクト</h3>
+    <div class="msub" id="projSub">工房に保存された設計図・コードの履歴</div>
+    <div id="projList"></div>
+    <div class="btn-row" style="margin-top:8px;">
+      <button class="btn btn-sec" onclick="closeProjects()">閉じる</button>
+    </div>
+  </div>
+</div>
+
+<!-- 管理パネルモーダル -->
+<div class="modal-bg" id="adminModal" onclick="if(event.target===this)closeAdmin()">
+  <div class="modal">
+    <h3>管理パネル</h3>
+    <div class="msub">ユーザーの発行・管理（共通 users コレクション）</div>
+
+    <div class="temp-pw-box" id="tempPwBox"></div>
+
+    <div style="background:var(--panel2);border:1px solid var(--line);border-radius:11px;padding:15px;margin-bottom:16px;">
+      <div style="font-size:13px;font-weight:700;margin-bottom:10px;">＋ 新規ユーザーを発行</div>
+      <div class="admin-row">
+        <div class="f" style="flex:2;">
+          <label>メールアドレス</label>
+          <input type="text" id="newUserEmail" placeholder="user@example.com">
+        </div>
+        <div class="f">
+          <label>仮パスワード</label>
+          <input type="text" id="newUserPw" placeholder="空欄で自動生成">
+        </div>
+      </div>
+      <div class="admin-row" style="margin-bottom:0;">
+        <label style="display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--text-dim);cursor:pointer;">
+          <input type="checkbox" id="newUserAdmin" style="width:auto;"> 管理者権限を付与
+        </label>
+        <button class="btn btn-primary" style="margin-left:auto;padding:9px 18px;font-size:13px;" onclick="issueUser()">発行</button>
+      </div>
+    </div>
+
+    <div style="font-size:13px;font-weight:700;margin-bottom:8px;">登録ユーザー</div>
+    <div id="userList"><div class="empty-state">読み込み中…</div></div>
+
+    <div class="btn-row" style="margin-top:8px;">
+      <button class="btn btn-sec" onclick="closeAdmin()">閉じる</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+/* ============================================================
+   APP GENESIS AI  —  ロジック (ES5 / var)
+   ============================================================ */
+var API_URL = "https://us-central1-kensetsu-nippo-842a2.cloudfunctions.net/askAI";
+var ACCESS_KEY = "HeartsHouse2026Key";
+
+/* アプリ状態 */
+var S = {
+  mode:"", fmt:"html", gen:"single", stdInject:true, authInject:false,
+  appName:"", purpose:"", features:"", srcCode:"",
+  design:null, code:"", review:"", curStep:1,
+  maxStep:1, projectId:null
+};
+
+/* よく使う機能チップ */
+var FEAT_PRESETS = [
+  "Firestore保存","Firebase Auth","Gemini AI呼び出し","カメラ/画像入力",
+  "音声読み上げ","CSV/Excel出力","カレンダー","GPS/地図","検索","履歴管理","PDF出力","ダークモード"
+];
+
+/* ---------- ハーツハウス標準仕様プロンプト ---------- */
+function stdSpecBlock(){
+  return [
+    "【ハーツハウス標準仕様 — 厳守】",
+    "・出力は単一のHTMLファイル。外部CSS/JSファイルに分割しない。",
+    "・JavaScriptはES5スタイルで書く（変数は var を使用、アロー関数や let/const は避ける）。",
+    "・Firebase SDK を使う場合は type=\"module\" でファイル末尾に配置し、初期化完了を fbReady カスタムイベントで通知する。DOMやロジックはこのイベントを待って動く（content:// のローカルファイルでも動作させるため）。",
+    "・AI呼び出しは以下のプロキシを使う：",
+    "    URL: " + API_URL,
+    "    HTTPヘッダー名は x-access-key（ヘッダー名の綴りだけが小文字。これは値の話ではない）。",
+    "    x-access-key の値は正確に「" + ACCESS_KEY + "」を使う。この文字列の大文字・小文字を1文字たりとも変えてはいけない（小文字化・大文字化・記号変更はすべて禁止。heartshouse2026key のように小文字化するとサーバが即座に認証拒否する）。",
+    "    Content-Type: application/json。",
+    "    ボディ: { prompt:\"...\" } または { messages:[{role,content}] } （prompt と messages の同時送信は禁止）",
+    "・レスポンスは新形式 {success:true, data:{candidates:[{content:{parts:[{text}]}}], text}} と旧形式の両方に対応する extractGeminiText ヘルパーで取り出す：",
+    "    function extractGeminiText(d){ try{ return (d&&d.data&&d.data.candidates&&d.data.candidates[0].content.parts[0].text) || (d&&d.data&&d.data.text) || (d&&d.candidates&&d.candidates[0].content.parts[0].text) || (d&&d.text) || ''; }catch(e){ return (d&&d.text)||''; } }",
+    "・エラー形式は {success:false, error:\"文字列\"}（error 自体が文字列。.message ではない）。",
+    "・useSearch:true と responseSchema の同時使用は禁止。messages と prompt の同時送信も禁止。",
+    "・responseSchema が必要なときはクライアントからボディに responseSchema を含めて送る。",
+    "・Functions のリージョンは us-central1（asia-northeast1 は誤り）。"
+  ].join("\n");
+}
+
+/* ---------- 管理者認証テンプレート・プロンプト ---------- */
+function authTemplateBlock(){
+  return [
+    "【管理者認証テンプレート — 実装必須】",
+    "・起動時にログインゲート（メール＋パスワード）を全画面表示する。新規登録（サインアップ）ボタンは設けない。アカウントは管理者のみが発行する。",
+    "・Firebase Auth のメール／パスワード認証を使う。onAuthStateChanged で状態を監視し、未ログインならゲート表示、ログイン済みならアプリ本体を表示する。",
+    "・ユーザー情報は既存アプリと共通の Firestore 'users' コレクションを参照する（doc ID = uid）。ドキュメント例: { email, isAdmin:boolean, disabled:boolean, createdAt, createdBy }。",
+    "・users/{uid} の disabled が true のユーザーはログイン後に即サインアウトして弾く。",
+    "・isAdmin が true のユーザーにのみ「管理パネル」ボタンを表示する。一般ユーザーには出さない。",
+    "・管理パネルの機能: (a)メール＋仮パスワードで新規ユーザー発行（仮パスワード空欄なら自動生成し画面に表示）、(b)ユーザー一覧表示、(c)disabled フラグの切替（無効化／有効化）。",
+    "・新規ユーザー発行では、管理者自身のログインセッションを維持するため、必ずセカンダリの Firebase App インスタンスを使い捨てで生成して createUserWithEmailAndPassword を実行し、完了後に signOut→deleteApp する。プライマリの auth で作成してはいけない（管理者がログアウトされてしまうため）。",
+    "    例: var secApp=initializeApp(firebaseConfig,'sec_'+Date.now()); var secAuth=getAuth(secApp); createUserWithEmailAndPassword(secAuth,email,pw).then(function(c){ var uid=c.user.uid; return signOut(secAuth).then(function(){ return deleteApp(secApp).then(function(){ /* users/{uid} に setDoc */ }); }); });",
+    "・仮パスワードは Firestore に平文保存しない（発行時に画面表示して本人に伝える運用）。",
+    "・アカウントの無効化はクライアントからは Firestore の disabled フラグで行う（Auth 自体の無効化には Admin SDK が必要なためクライアント不可）。"
+  ].join("\n");
+}
+
+/* ---------- askAI 呼び出し ---------- */
+function callAI(body){
+  return fetch(API_URL, {
+    method:"POST",
+    headers:{ "Content-Type":"application/json", "x-access-key":ACCESS_KEY },
+    body:JSON.stringify(body)
+  }).then(function(r){
+    return r.text().then(function(t){
+      var d;
+      try{ d = JSON.parse(t); }
+      catch(e){ d = { success:false, error:"非JSON応答 (HTTP "+r.status+"): "+t.slice(0,180) }; }
+      // HTTPエラーなのに success フラグが無い場合も失敗扱いにする
+      if(!r.ok && !(d && d.success===false)){
+        d = { success:false, error:"HTTP "+r.status+" "+(r.statusText||"")+" : "+t.slice(0,180) };
+      }
+      if(d) d._status = r.status;
+      return d;
+    });
+  });
+}
+
+/* ---------- レスポンス抽出（このアプリ自身でも新旧両対応） ---------- */
+function extractGeminiText(d){
+  try{
+    return (d && d.data && d.data.candidates && d.data.candidates[0].content.parts[0].text) ||
+           (d && d.data && d.data.text) ||
+           (d && d.candidates && d.candidates[0].content.parts[0].text) ||
+           (d && d.text) || "";
+  }catch(e){ return (d && d.text) || ""; }
+}
+
+/* ---------- HTMLコード抽出（```html … ``` からコードを取り出す） ---------- */
+function extractCode(text){
+  if(!text) return "";
+  var m = text.match(/```(?:html|HTML)?\s*([\s\S]*?)```/);
+  if(m) return m[1].trim();
+  // フェンスが無ければ <!DOCTYPE か <html から末尾まで
+  var i = text.indexOf("<!DOCTYPE");
+  if(i < 0) i = text.indexOf("<html");
+  if(i >= 0) return text.slice(i).trim();
+  return text.trim();
+}
+
+/* ============================================================
+   ステップ制御
+   ============================================================ */
+function renderSteps(){
+  var els = document.querySelectorAll(".step");
+  for(var i=0;i<els.length;i++){
+    var n = i+1;
+    els[i].className = "step" + (n===S.curStep?" active":"") + (n<S.curStep&&n<=S.maxStep?" done":"");
+  }
+}
+function showPanel(n){
+  var ps = document.querySelectorAll(".panel");
+  for(var i=0;i<ps.length;i++) ps[i].className = "panel" + ((i+1)===n?" show":"");
+}
+function goto(n){
+  S.curStep = n;
+  if(n > S.maxStep) S.maxStep = n;
+  showPanel(n); renderSteps();
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+function tryGoto(n){ if(n <= S.maxStep) goto(n); }
+
+/* ============================================================
+   Step1 モード
+   ============================================================ */
+function selMode(m){
+  S.mode = m;
+  var cards = document.querySelectorAll(".mode-card");
+  for(var i=0;i<cards.length;i++)
+    cards[i].className = "mode-card" + (cards[i].getAttribute("data-mode")===m?" sel":"");
+  document.getElementById("p1next").disabled = false;
+
+  // パネル2の表示を切替
+  var isFix = (m==="fix" || m==="migrate");
+  document.getElementById("fixLoad").style.display = isFix ? "block" : "none";
+  document.getElementById("featBlock").style.display = (m==="migrate") ? "none" : "block";
+  var titles = {new:"要件を入力", fix:"改修する内容", migrate:"移行対象を読み込み"};
+  var descs = {
+    new:"作りたいアプリの目的と機能を書いてください。詳しいほど設計図の精度が上がります。",
+    fix:"既存コードを貼り付け、どう直したいかを目的欄に書いてください。",
+    migrate:"旧仕様のHTMLを貼り付けてください。askAI + extractGeminiText へ自動変換します。"
+  };
+  document.getElementById("p2title").textContent = titles[m];
+  document.getElementById("p2desc").textContent = descs[m];
+  document.getElementById("purposeLbl").textContent = (m==="new") ? "目的・やりたいこと" : "改修・変更の指示";
+  if(m==="migrate"){
+    document.getElementById("purpose").value =
+      "旧 askClaude 仕様を askAI 新仕様へ移行。エンドポイント・x-access-key・キー値・extractGeminiText・エラー形式(error文字列)を新旧両対応にする。既存の正常動作は壊さず最小スコープで修正。";
+  }
+}
+
+/* ============================================================
+   Step2 要件
+   ============================================================ */
+function selFmt(b){ setSeg("fmtSeg",b); S.fmt=b.getAttribute("data-fmt"); }
+function selGen(b){ setSeg("genSeg",b); S.gen=b.getAttribute("data-gen"); }
+function setSeg(id,b){
+  var bs = document.getElementById(id).querySelectorAll("button");
+  for(var i=0;i<bs.length;i++) bs[i].className="";
+  b.className="on";
+}
+function buildFeatChips(){
+  var box = document.getElementById("featChips");
+  var html = "";
+  for(var i=0;i<FEAT_PRESETS.length;i++)
+    html += '<span class="chip" onclick="toggleFeat(this)">'+FEAT_PRESETS[i]+'</span>';
+  box.innerHTML = html;
+}
+function toggleFeat(el){
+  var ta = document.getElementById("features");
+  var t = el.textContent;
+  if(el.className.indexOf("on")>=0){
+    el.className="chip";
+    ta.value = ta.value.split("\n").filter(function(l){return l.replace(/^・/,"").trim()!==t;}).join("\n");
+  }else{
+    el.className="chip on";
+    ta.value = (ta.value.trim()? ta.value.replace(/\n+$/,"")+"\n":"") + "・" + t;
+  }
+}
+
+function collectBrief(){
+  S.appName = document.getElementById("appName").value.trim();
+  S.purpose = document.getElementById("purpose").value.trim();
+  var fEl = document.getElementById("features"); S.features = fEl? fEl.value.trim() : "";
+  S.stdInject = document.getElementById("stdInject").checked;
+  var aEl = document.getElementById("authInject"); S.authInject = aEl ? aEl.checked : false;
+  var sEl = document.getElementById("srcCode"); S.srcCode = sEl? sEl.value.trim() : "";
+}
+
+/* ============================================================
+   Step3 設計図生成
+   ============================================================ */
+var DESIGN_SCHEMA = {
+  type:"object",
+  properties:{
+    appName:{type:"string"},
+    overview:{type:"string"},
+    screens:{type:"array", items:{type:"object", properties:{
+      name:{type:"string"}, desc:{type:"string"}
+    }}},
+    features:{type:"array", items:{type:"string"}},
+    dataModel:{type:"string"},
+    techNotes:{type:"string"}
+  }
+};
+
+function genDesign(){
+  collectBrief();
+  if(S.mode==="new" && !S.purpose){ toast("目的を入力してください","err"); return; }
+  if((S.mode==="fix"||S.mode==="migrate") && !S.srcCode){ toast("既存コードを貼り付けてください","err"); return; }
+
+  goto(3);
+  document.getElementById("designLoading").style.display="flex";
+  document.getElementById("blueprintEdit").innerHTML="";
+  document.getElementById("p3btns").style.display="none";
+
+  var p = designPrompt();
+  callAI({ prompt:p, responseSchema:DESIGN_SCHEMA }).then(function(d){
+    if(d && d.success===false){ throw makeErr(d); }
+    var txt = extractGeminiText(d);
+    var design = safeParse(txt);
+    if(!design){ throw new Error("設計図の解析に失敗しました"); }
+    S.design = design;
+    renderBlueprint(design);
+    document.getElementById("designLoading").style.display="none";
+    document.getElementById("p3btns").style.display="flex";
+  }).catch(function(e){
+    document.getElementById("designLoading").style.display="none";
+    document.getElementById("blueprintEdit").innerHTML =
+      '<div class="empty-state">⚠ '+ (e.message||e) +'<br>再製図をお試しください。</div>';
+    document.getElementById("p3btns").style.display="flex";
+    toast("設計図の生成に失敗: "+(e.message||e),"err");
+  });
+}
+
+function designPrompt(){
+  var head, ask;
+  if(S.mode==="new"){
+    head = "あなたはハーツハウス開発工房のシニア設計者です。以下の要件から、単一HTMLアプリの設計図をJSONで作成してください。";
+    ask = "アプリ名: "+(S.appName||"（未定）")+"\n目的:\n"+S.purpose+"\n\n主な機能:\n"+(S.features||"（AIが提案）")+"\n\n出力形式: "+(S.fmt==="pwa"?"PWA対応の単一HTML":"単一HTML");
+  }else if(S.mode==="fix"){
+    head = "あなたはハーツハウス開発工房のシニア設計者です。既存の単一HTMLアプリを改修します。改修方針を設計図としてJSONで整理してください。screensには影響する画面、featuresには変更・追加する機能、techNotesには修正の勘所と壊してはいけない箇所を書いてください。";
+    ask = "改修指示:\n"+S.purpose+"\n\n=== 既存コード（先頭抜粋）===\n"+ S.srcCode.slice(0,6000);
+  }else{
+    head = "あなたはハーツハウス開発工房の移行担当です。旧 askClaude 仕様のHTMLを askAI 新仕様へ移行する計画を設計図JSONで作成してください。featuresには具体的な置換項目（エンドポイント・ヘッダー名 x-access-key・キー値 HeartsHouse2026Key・extractGeminiTextヘルパー・エラー形式 error文字列・レスポンス新旧両対応）を列挙し、techNotesには壊してはいけない正常動作箇所を明記してください。";
+    ask = "=== 移行対象コード（先頭抜粋）===\n"+ S.srcCode.slice(0,6000);
+  }
+  var std = S.stdInject ? ("\n\n"+stdSpecBlock()) : "";
+  var authb = S.authInject ? ("\n\n"+authTemplateBlock()) : "";
+  return head + "\n\n" + ask + std + authb +
+    "\n\n必ず指定のJSONスキーマ（appName, overview, screens[{name,desc}], features[], dataModel, techNotes）で返してください。日本語で。";
+}
+
+function safeParse(txt){
+  if(!txt) return null;
+  try{ return JSON.parse(txt); }catch(e){}
+  var m = txt.match(/\{[\s\S]*\}/);
+  if(m){ try{ return JSON.parse(m[0]); }catch(e2){} }
+  return null;
+}
+
+function renderBlueprint(d){
+  var scr = d.screens||[], ft = d.features||[];
+  var h = '<div class="blueprint">';
+  h += bpSection("概要", '<textarea id="bpOverview">'+esc(d.overview||"")+'</textarea>');
+
+  var scrHtml="";
+  for(var i=0;i<scr.length;i++){
+    scrHtml += screenRow(scr[i].name||"", scr[i].desc||"");
+  }
+  h += bpSection("画面構成", '<div id="bpScreens">'+scrHtml+'</div><button class="add-line" onclick="addScreen()">＋ 画面を追加</button>');
+
+  var ftHtml="";
+  for(var j=0;j<ft.length;j++){ ftHtml += featRow(ft[j]); }
+  h += bpSection("機能一覧", '<div id="bpFeats">'+ftHtml+'</div><button class="add-line" onclick="addFeat()">＋ 機能を追加</button>');
+
+  h += bpSection("データ設計", '<textarea id="bpData">'+esc(d.dataModel||"")+'</textarea>');
+  h += bpSection("技術メモ / 勘所", '<textarea id="bpTech">'+esc(d.techNotes||"")+'</textarea>');
+  h += '</div>';
+  document.getElementById("blueprintEdit").innerHTML = h;
+}
+function bpSection(title,inner){
+  return '<div class="bp-section"><div class="bp-head">◆ '+title+'</div><div class="bp-body">'+inner+'</div></div>';
+}
+function screenRow(name,desc){
+  return '<div class="screen-item"><input type="text" placeholder="画面名" value="'+escAttr(name)+'" style="max-width:180px;"><input type="text" placeholder="説明" value="'+escAttr(desc)+'"><button class="del-x" onclick="this.parentNode.remove()">×</button></div>';
+}
+function featRow(v){
+  return '<div class="feat-item"><input type="text" value="'+escAttr(v)+'"><button class="del-x" onclick="this.parentNode.remove()">×</button></div>';
+}
+function addScreen(){ var c=document.createElement("div"); c.innerHTML=screenRow("",""); document.getElementById("bpScreens").appendChild(c.firstChild); }
+function addFeat(){ var c=document.createElement("div"); c.innerHTML=featRow(""); document.getElementById("bpFeats").appendChild(c.firstChild); }
+
+/* 編集内容を design に反映 */
+function collectDesign(){
+  if(!S.design) S.design={};
+  S.design.overview = valOf("bpOverview");
+  S.design.dataModel = valOf("bpData");
+  S.design.techNotes = valOf("bpTech");
+  var scr=[], srows=document.querySelectorAll("#bpScreens .screen-item");
+  for(var i=0;i<srows.length;i++){
+    var ins=srows[i].querySelectorAll("input");
+    if(ins[0].value.trim()) scr.push({name:ins[0].value.trim(), desc:ins[1].value.trim()});
+  }
+  S.design.screens=scr;
+  var ft=[], frows=document.querySelectorAll("#bpFeats .feat-item");
+  for(var j=0;j<frows.length;j++){ var v=frows[j].querySelector("input").value.trim(); if(v) ft.push(v); }
+  S.design.features=ft;
+}
+function valOf(id){ var e=document.getElementById(id); return e? e.value.trim():""; }
+
+/* ============================================================
+   Step4 鍛造（コード生成）
+   ============================================================ */
+function startForge(){
+  collectDesign();
+  S._triedSplit = false;
+  document.getElementById("forgeLoading").style.display="flex";
+  document.getElementById("forgeDone").style.display="none";
+  setBar(8);
+  if(S.gen==="split") forgeSplit(); else forgeSingle();
+}
+
+/* Functionsの success:false / HTTPエラーを、状態コード付きのErrorに変換 */
+function makeErr(d){
+  var msg = (d && d.error) || "生成エラー";
+  if(d && d._status && d._status!==200) msg += "（HTTP "+d._status+"）";
+  return new Error(msg);
+}
+
+function forgeSingle(){
+  setBar(30);
+  document.getElementById("forgeMsg").innerHTML = "<b>コード</b>を鍛造中…（一発生成）";
+  callAI({ prompt:codePrompt(false,"") }).then(function(d){
+    if(d && d.success===false){ throw makeErr(d); }
+    setBar(85);
+    var code = extractCode(extractGeminiText(d));
+    finishForge(code);
+  }).catch(function(e){
+    // 一発生成が失敗 → 分割生成へ自動フォールバック（1回だけ）
+    if(!S._triedSplit){
+      S._triedSplit = true;
+      toast("一発生成に失敗。分割生成に自動で切替えます","err");
+      document.getElementById("forgeMsg").innerHTML = "<b>分割生成</b>に切替えて再試行中…";
+      setBar(15);
+      forgeSplit();
+    }else{
+      forgeErr(e);
+    }
+  });
+}
+
+/* 分割生成: 続き記号 <!--GENESIS_CONTINUE--> があれば継続要求して結合 */
+function forgeSplit(){
+  var acc=""; var round=0; var MAX=5;
+  function step(){
+    round++;
+    setBar(15 + round*16);
+    document.getElementById("forgeMsg").innerHTML = "<b>コード</b>を鍛造中… パート "+round;
+    var prompt = codePrompt(true, acc);
+    callAI({ prompt:prompt }).then(function(d){
+      if(d && d.success===false){ throw makeErr(d); }
+      var part = extractGeminiText(d);
+      var cont = part.indexOf("<!--GENESIS_CONTINUE-->")>=0;
+      part = part.replace("<!--GENESIS_CONTINUE-->","");
+      acc += (round===1? extractCode(part) : part);
+      if(cont && round<MAX){ step(); }
+      else { finishForge(extractCode(acc)); }
+    }).catch(function(e){
+      // 分割の途中でここまでに実体があれば、それを活かして仕上げに進める
+      if(acc && acc.length>400){
+        toast("途中でエラー。ここまでの生成分を表示します","err");
+        finishForge(extractCode(acc));
+      }else{
+        forgeErr(e);
+      }
+    });
+  }
+  step();
+}
+
+function codePrompt(split, prev){
+  collectDesign();
+  var d = S.design||{};
+  var parts = [];
+  parts.push("あなたはハーツハウス開発工房のシニア開発者です。以下の設計図に厳密に従い、完成した"+(S.fmt==="pwa"?"PWA対応の":"")+"単一HTMLアプリのコードを書いてください。");
+  parts.push("\n=== 設計図 ===");
+  parts.push("アプリ名: "+(d.appName||S.appName||"App"));
+  parts.push("概要: "+(d.overview||""));
+  if(d.screens&&d.screens.length){
+    parts.push("画面: "+d.screens.map(function(s){return s.name+"("+s.desc+")";}).join(" / "));
+  }
+  if(d.features&&d.features.length){ parts.push("機能:\n- "+d.features.join("\n- ")); }
+  if(d.dataModel) parts.push("データ設計: "+d.dataModel);
+  if(d.techNotes) parts.push("技術メモ/勘所: "+d.techNotes);
+
+  if(S.mode==="fix" || S.mode==="migrate"){
+    parts.push("\n=== 元コード（この内容を基に改修。正常動作している箇所は壊さず最小スコープで変更）===");
+    parts.push(S.srcCode.slice(0,12000));
+  }
+
+  if(S.stdInject) parts.push("\n"+stdSpecBlock());
+  if(S.authInject) parts.push("\n"+authTemplateBlock());
+
+  if(split){
+    if(prev){
+      parts.push("\n【分割生成・続き】ここまでの出力の続きだけを、途中から書いてください（重複禁止・説明文なし・コードのみ）。まだ続きがある場合は末尾に <!--GENESIS_CONTINUE--> を付けてください。");
+      parts.push("=== ここまでの末尾 ===\n"+ prev.slice(-1500));
+    }else{
+      parts.push("\n【分割生成・1回目】コードの先頭から書いてください。長くて1回で収まらない場合は、切りの良い所で止めて末尾に <!--GENESIS_CONTINUE--> を付けてください。```html で始めてください。");
+    }
+  }else{
+    parts.push("\n完全に動作する1ファイルを ```html から ``` までで出力してください。説明文は不要です。");
+  }
+  return parts.join("\n");
+}
+
+function finishForge(code){
+  if(!code){ forgeErr(new Error("コードが空です")); return; }
+  S.code = code;
+  setBar(100);
+  setTimeout(function(){
+    document.getElementById("forgeLoading").style.display="none";
+    document.getElementById("forgeDone").style.display="block";
+    var fname = (S.design&&S.design.appName? slug(S.design.appName):"app") + ".html";
+    document.getElementById("forgeFname").textContent = fname;
+    document.getElementById("forgeSz").textContent = fmtSize(code.length);
+    document.getElementById("forgeCode").textContent = code;
+  }, 350);
+}
+function forgeErr(e){
+  document.getElementById("forgeLoading").style.display="none";
+  document.getElementById("forgeDone").style.display="block";
+  document.getElementById("forgeCode").textContent = "// 生成に失敗しました: "+(e.message||e)+"\n// 再鍛造をお試しください。";
+  document.getElementById("forgeFname").textContent = "error";
+  toast("鍛造に失敗: "+(e.message||e),"err");
+}
+function setBar(p){ document.getElementById("forgeBar").style.width = p+"%"; }
+
+/* ============================================================
+   Step5 レビュー
+   ============================================================ */
+function startReview(){
+  document.getElementById("reviewLoading").style.display="flex";
+  document.getElementById("reviewDone").style.display="none";
+  // 入力が長すぎるとFunctions側でタイムアウト/過大入力エラーになるため、
+  // 長いコードは先頭+末尾（Firebase初期化を含む）に絞って要点を送る
+  var codeForReview;
+  if(S.code.length > 9000){
+    codeForReview = S.code.slice(0,6500) + "\n\n… （中略 "+ (S.code.length-8500) +" 文字）…\n\n" + S.code.slice(-2000);
+  }else{
+    codeForReview = S.code;
+  }
+  var p = "あなたはハーツハウス開発工房のコードレビュアーです。次の単一HTMLアプリを簡潔にレビューしてください。観点: (1)構文・明らかなバグ (2)ハーツハウス標準仕様への準拠（askAI/x-access-key/extractGeminiText/fbReady/ES5）。特に x-access-key の値が正確に「HeartsHouse2026Key」になっているか必ず確認し、heartshouse2026key のように小文字化されていたら最優先で指摘する（サーバが即認証拒否するため）。(3)禁止事項違反（useSearch+responseSchema併用, messages+prompt同時, リージョン誤り）(4)改善提案。良い点も一言。箇条書きで日本語、前置き不要。\n\n=== コード ===\n"+ codeForReview;
+  callAI({ prompt:p }).then(function(d){
+    if(d && d.success===false){ throw makeErr(d); }
+    S.review = extractGeminiText(d) || "（レビュー結果が空でした）";
+    document.getElementById("reviewText").textContent = S.review;
+    document.getElementById("reviewLoading").style.display="none";
+    document.getElementById("reviewDone").style.display="block";
+  }).catch(function(e){
+    console.error("review error:", e);
+    S.review = "レビュー生成に失敗しました（"+(e.message||e)+"）。\nコードは正常に生成できています。下の「再レビュー」で再試行するか、そのままコピー/ダウンロードして使えます。";
+    document.getElementById("reviewText").textContent = S.review;
+    document.getElementById("reviewLoading").style.display="none";
+    document.getElementById("reviewDone").style.display="block";
+    toast("レビュー失敗（コードは生成済み）","err");
+  });
+}
+
+/* 出力操作 */
+function copyCode(){
+  var ta=document.createElement("textarea"); ta.value=S.code;
+  document.body.appendChild(ta); ta.select();
+  try{ document.execCommand("copy"); toast("コードをコピーしました","ok"); }
+  catch(e){ toast("コピー失敗","err"); }
+  document.body.removeChild(ta);
+}
+function downloadCode(){
+  var fname = (S.design&&S.design.appName? slug(S.design.appName):"app")+".html";
+  var blob = new Blob([S.code],{type:"text/html"});
+  var a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=fname;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  toast("ダウンロードしました: "+fname,"ok");
+}
+var previewOpen=false;
+function togglePreview(){
+  var area=document.getElementById("previewArea");
+  previewOpen=!previewOpen;
+  area.style.display = previewOpen? "block":"none";
+  if(previewOpen){
+    var f=document.getElementById("previewFrame");
+    f.srcdoc = S.code;
+    setTimeout(function(){ area.scrollIntoView({behavior:"smooth",block:"center"}); },100);
+  }
+}
+
+/* ============================================================
+   Firebase 保存 / 履歴
+   ============================================================ */
+var FB = { ready:false, db:null, uid:null, user:null, isAdmin:false };
+
+function saveProject(){
+  if(!FB.ready || !FB.db){ toast("Firebase未接続のため保存できません（設定を確認）","err"); return; }
+  collectDesign();
+  var now = Date.now();
+  var data = {
+    name: (S.design&&S.design.appName) || S.appName || "無題アプリ",
+    mode: S.mode, fmt: S.fmt, gen: S.gen,
+    purpose: S.purpose,
+    design: JSON.stringify(S.design||{}),
+    code: S.code,
+    review: S.review,
+    codeSize: S.code.length,
+    uid: FB.uid || "local",
+    updatedAt: now
+  };
+  var col = FB.db.collection("genesis_projects");
+  var op = S.projectId ? col.doc(S.projectId).set(data,{merge:true})
+                       : col.add(Object.assign({createdAt:now}, data));
+  op.then(function(ref){
+    if(ref && ref.id) S.projectId = ref.id;
+    toast("工房に保存しました 💾","ok");
+  }).catch(function(e){
+    if((""+e).indexOf("longer than")>=0 || S.code.length>1000000)
+      toast("コードが大きすぎます（Firestore上限）。ダウンロード保存をご利用ください","err");
+    else toast("保存失敗: "+(e.message||e),"err");
+  });
+}
+
+function openProjects(){
+  document.getElementById("projModal").className="modal-bg show";
+  var list=document.getElementById("projList");
+  if(!FB.ready || !FB.db){
+    list.innerHTML='<div class="empty-state">Firebase未接続です。<br>ファイル内の firebaseConfig を設定すると履歴が使えます。</div>';
+    return;
+  }
+  list.innerHTML='<div class="empty-state">読み込み中…</div>';
+  FB.db.collection("genesis_projects").orderBy("updatedAt","desc").limit(30).get()
+  .then(function(qs){
+    if(qs.empty){ list.innerHTML='<div class="empty-state">まだ保存されたプロジェクトはありません。</div>'; return; }
+    var h="";
+    qs.forEach(function(doc){
+      var d=doc.data();
+      var modeLbl={new:"新規",fix:"改修",migrate:"移行"}[d.mode]||d.mode;
+      h+='<div class="proj-item" onclick="loadProject(\''+doc.id+'\')">'
+        +'<div class="pi-body"><div class="pi-name">'+esc(d.name||"無題")+'</div>'
+        +'<div class="pi-meta">'+fmtDate(d.updatedAt)+' · '+fmtSize(d.codeSize||0)+'</div></div>'
+        +'<span class="pi-tag">'+modeLbl+'</span></div>';
+    });
+    list.innerHTML=h;
+  }).catch(function(e){
+    list.innerHTML='<div class="empty-state">読み込み失敗: '+(e.message||e)+'</div>';
+  });
+}
+function closeProjects(){ document.getElementById("projModal").className="modal-bg"; }
+
+function loadProject(id){
+  FB.db.collection("genesis_projects").doc(id).get().then(function(doc){
+    if(!doc.exists){ toast("見つかりません","err"); return; }
+    var d=doc.data();
+    S.projectId=id; S.mode=d.mode||"new"; S.fmt=d.fmt||"html"; S.gen=d.gen||"single";
+    S.appName=d.name||""; S.purpose=d.purpose||"";
+    S.design=safeParse(d.design)||{appName:d.name}; S.code=d.code||""; S.review=d.review||"";
+    // 画面反映
+    renderBlueprint(S.design);
+    document.getElementById("p3btns").style.display="flex";
+    document.getElementById("designLoading").style.display="none";
+    if(S.code){ finishForge(S.code); }
+    if(S.review){ document.getElementById("reviewText").textContent=S.review;
+      document.getElementById("reviewDone").style.display="block";
+      document.getElementById("reviewLoading").style.display="none"; }
+    S.maxStep=5; closeProjects();
+    goto(S.code? 5 : 3);
+    toast("読み込みました: "+(d.name||"プロジェクト"),"ok");
+  }).catch(function(e){ toast("読み込み失敗: "+(e.message||e),"err"); });
+}
+
+/* ============================================================
+   ユーティリティ
+   ============================================================ */
+function esc(s){ return (""+s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+function escAttr(s){ return esc(s).replace(/"/g,"&quot;"); }
+function slug(s){ return (""+s).replace(/[^\w\u3040-\u30ff\u4e00-\u9fafー]+/g,"-").replace(/^-+|-+$/g,"").slice(0,40)||"app"; }
+function fmtSize(n){ return n<1024? n+" B" : n<1048576? (n/1024).toFixed(1)+" KB" : (n/1048576).toFixed(2)+" MB"; }
+function fmtDate(ts){ if(!ts) return ""; var d=new Date(ts);
+  function z(x){return x<10?"0"+x:x;} return d.getFullYear()+"/"+z(d.getMonth()+1)+"/"+z(d.getDate())+" "+z(d.getHours())+":"+z(d.getMinutes()); }
+function toast(msg,type){
+  var t=document.getElementById("toast");
+  t.textContent=msg; t.className="show "+(type||"");
+  clearTimeout(t._tm); t._tm=setTimeout(function(){ t.className=t.className.replace("show","").trim(); },2600);
+}
+function resetAll(){
+  S={mode:"",fmt:"html",gen:"single",stdInject:true,authInject:false,appName:"",purpose:"",features:"",srcCode:"",design:null,code:"",review:"",curStep:1,maxStep:1,projectId:null};
+  document.getElementById("appName").value="";
+  document.getElementById("purpose").value="";
+  document.getElementById("features").value="";
+  var sc=document.getElementById("srcCode"); if(sc) sc.value="";
+  var cards=document.querySelectorAll(".mode-card"); for(var i=0;i<cards.length;i++) cards[i].className="mode-card";
+  document.getElementById("p1next").disabled=true;
+  document.getElementById("stdInject").checked=true;
+  var ai=document.getElementById("authInject"); if(ai) ai.checked=false;
+  var chips=document.querySelectorAll(".chip"); for(var j=0;j<chips.length;j++) chips[j].className="chip";
+  goto(1);
+}
+
+/* 初期化 */
+buildFeatChips();
+
+/* ファイル読み込み */
+document.getElementById("fileInput").addEventListener("change", function(e){
+  var f=e.target.files[0]; if(!f) return;
+  var r=new FileReader();
+  r.onload=function(){ document.getElementById("srcCode").value=r.result; toast("読み込みました: "+f.name,"ok"); };
+  r.readAsText(f);
+});
+
+/* fbReady を待って Firebase をセット・認証状態を監視 */
+window.addEventListener("fbReady", function(){
+  try{
+    FB.db = window._db; FB.ready = true;
+    document.getElementById("fbDot").className="fb-dot on";
+    document.getElementById("fbDot").title="Firebase接続OK";
+    if(window._auth && window._auth.onAuthChanged){
+      window._auth.onAuthChanged(onAuthState);
+    }
+  }catch(e){
+    document.getElementById("fbDot").className="fb-dot off";
+  }
+});
+
+/* 認証状態変化 */
+function onAuthState(user){
+  if(user){
+    FB.user = user; FB.uid = user.uid;
+    FB.db.collection("users").doc(user.uid).get().then(function(doc){
+      var prof = doc.exists ? doc.data() : null;
+      if(prof && prof.disabled){
+        window._auth.signOutUser();
+        showGate(); showGateErr("このアカウントは無効化されています");
+        return;
+      }
+      FB.isAdmin = !!(prof && prof.isAdmin);
+      enterApp();
+    }).catch(function(){ FB.isAdmin=false; enterApp(); });
+  }else{
+    FB.user=null; FB.uid=null; FB.isAdmin=false;
+    showGate();
+  }
+}
+function enterApp(){
+  document.getElementById("gate").className="gate hide";
+  document.getElementById("logoutBtn").style.display="flex";
+  document.getElementById("adminBtn").style.display = FB.isAdmin ? "flex" : "none";
+}
+function showGate(){
+  document.getElementById("gate").className="gate";
+  document.getElementById("logoutBtn").style.display="none";
+  document.getElementById("adminBtn").style.display="none";
+}
+function showGateErr(msg){ document.getElementById("loginErr").textContent=msg||""; }
+
+function doLogin(){
+  var email=document.getElementById("loginEmail").value.trim();
+  var pw=document.getElementById("loginPw").value;
+  if(!email||!pw){ showGateErr("メールとパスワードを入力してください"); return; }
+  if(!FB.ready){ showGateErr("Firebase接続待ちです。数秒後に再試行してください"); return; }
+  var btn=document.getElementById("loginBtn"); btn.disabled=true; showGateErr("");
+  window._auth.signIn(email,pw).then(function(){
+    btn.disabled=false;
+    document.getElementById("loginPw").value="";
+  }).catch(function(e){ btn.disabled=false; showGateErr(authErrMsg(e)); });
+}
+function doLogout(){ if(window._auth) window._auth.signOutUser(); }
+function authErrMsg(e){
+  var c=(e && e.code)||"";
+  if(c.indexOf("wrong-password")>=0 || c.indexOf("invalid-credential")>=0) return "パスワードが違います";
+  if(c.indexOf("user-not-found")>=0) return "登録されていないメールアドレスです";
+  if(c.indexOf("invalid-email")>=0) return "メールアドレスの形式が正しくありません";
+  if(c.indexOf("too-many-requests")>=0) return "試行回数が多すぎます。しばらく待ってください";
+  if(c.indexOf("user-disabled")>=0) return "このアカウントは無効化されています";
+  return "ログインに失敗しました（"+(c||(e&&e.message)||e)+"）";
+}
+
+/* ---------- 管理パネル ---------- */
+function openAdmin(){
+  if(!FB.isAdmin){ toast("管理者権限が必要です","err"); return; }
+  document.getElementById("adminModal").className="modal-bg show";
+  document.getElementById("tempPwBox").className="temp-pw-box";
+  loadUsers();
+}
+function closeAdmin(){ document.getElementById("adminModal").className="modal-bg"; }
+
+function genPassword(){
+  var cs="abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  var s=""; for(var i=0;i<10;i++) s+=cs.charAt(Math.floor(Math.random()*cs.length));
+  return s;
+}
+function issueUser(){
+  if(!FB.isAdmin){ toast("管理者権限が必要です","err"); return; }
+  var email=document.getElementById("newUserEmail").value.trim();
+  var pw=document.getElementById("newUserPw").value.trim();
+  var mkAdmin=document.getElementById("newUserAdmin").checked;
+  if(!email){ toast("メールアドレスを入力してください","err"); return; }
+  if(!pw) pw=genPassword();
+  if(pw.length<6){ toast("パスワードは6文字以上にしてください","err"); return; }
+  toast("発行中…");
+  window._auth.createUserSecondary(email,pw).then(function(uid){
+    if(!uid) throw new Error("uid取得失敗");
+    return FB.db.collection("users").doc(uid).set({
+      email:email, isAdmin:mkAdmin, disabled:false,
+      createdAt:Date.now(), createdBy:(FB.user&&FB.user.email)||"admin"
+    });
+  }).then(function(){
+    var box=document.getElementById("tempPwBox");
+    box.className="temp-pw-box show";
+    box.innerHTML="✓ 発行しました： <b>"+esc(email)+"</b><br>仮パスワード： <code>"+esc(pw)+"</code>　"
+      +'<button class="mini-btn" style="margin-left:6px;" onclick="copyText(\''+pw.replace(/'/g,"")+'\')">コピー</button>'
+      +"<br><span style=\"font-size:11px;\">このパスワードを本人に伝えてください（この画面を閉じると再表示できません）。</span>";
+    document.getElementById("newUserEmail").value="";
+    document.getElementById("newUserPw").value="";
+    document.getElementById("newUserAdmin").checked=false;
+    loadUsers();
+    toast("ユーザーを発行しました","ok");
+  }).catch(function(e){
+    var c=(e&&e.code)||"";
+    if(c.indexOf("email-already-in-use")>=0) toast("このメールは既に登録済みです","err");
+    else if(c.indexOf("invalid-email")>=0) toast("メール形式が正しくありません","err");
+    else toast("発行失敗: "+(c||(e&&e.message)||e),"err");
+  });
+}
+function loadUsers(){
+  var list=document.getElementById("userList");
+  list.innerHTML='<div class="empty-state">読み込み中…</div>';
+  FB.db.collection("users").get().then(function(qs){
+    if(qs.empty){ list.innerHTML='<div class="empty-state">ユーザーがいません。</div>'; return; }
+    var h="";
+    qs.forEach(function(doc){
+      var d=doc.data(), id=doc.id;
+      var badges="";
+      if(d.isAdmin) badges+='<span class="badge admin">管理者</span>';
+      if(d.disabled) badges+='<span class="badge off">無効</span>';
+      var isMe=(id===FB.uid);
+      var toggleLbl=d.disabled?"有効化":"無効化";
+      var btn=isMe?'<span style="font-size:11px;color:var(--text-faint);flex:none;">（自分）</span>'
+        :'<button class="mini-btn" onclick="toggleUser(\''+id+'\','+(d.disabled?"false":"true")+'\)">'+toggleLbl+'</button>';
+      h+='<div class="user-item"><div class="ui-body"><div class="ui-email">'+esc(d.email||"(no email)")+' '+badges+'</div>'
+        +'<div class="ui-meta">'+(d.createdAt?fmtDate(d.createdAt):"")+'</div></div>'+btn+'</div>';
+    });
+    list.innerHTML=h;
+  }).catch(function(e){
+    list.innerHTML='<div class="empty-state">読み込み失敗: '+(e.message||e)+'</div>';
+  });
+}
+function toggleUser(uid,disable){
+  FB.db.collection("users").doc(uid).update({disabled:disable}).then(function(){
+    toast(disable?"無効化しました":"有効化しました","ok"); loadUsers();
+  }).catch(function(e){ toast("更新失敗: "+(e.message||e),"err"); });
+}
+function copyText(t){
+  var ta=document.createElement("textarea"); ta.value=t; document.body.appendChild(ta); ta.select();
+  try{ document.execCommand("copy"); toast("コピーしました","ok"); }catch(e){}
+  document.body.removeChild(ta);
+}
+/* 一定時間 fbReady が来なければ未設定案内 */
+setTimeout(function(){
+  if(!FB.ready){
+    document.getElementById("fbDot").className="fb-dot off";
+    document.getElementById("fbDot").title="Firebase未接続";
+    document.getElementById("cfgNote").className="config-note show";
+  }
+}, 3500);
+</script>
+
+<!-- ============================================================
+     Firebase 初期化（type="module" / ファイル末尾 / fbReady）
+     ↓↓↓ ご自身の firebaseConfig を貼り付けてください ↓↓↓
+     ============================================================ -->
+<script type="module">
+  import { initializeApp, deleteApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getFirestore, collection, doc, addDoc, getDoc, getDocs, setDoc, updateDoc, query, orderBy, limit }
+    from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged }
+    from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+  // kensetsu-nippo-842a2 プロジェクト設定（他アプリと共通）
+  var firebaseConfig = {
+    apiKey: "AIzaSyCVk2miG5TK1ffTofXLh0hHgeSbOvmIgZ8",
+    authDomain: "kensetsu-nippo-842a2.firebaseapp.com",
+    projectId: "kensetsu-nippo-842a2",
+    storageBucket: "kensetsu-nippo-842a2.firebasestorage.app",
+    messagingSenderId: "702880974315",
+    appId: "1:702880974315:web:985321dc9180046629c5ae"
+  };
+
+  try{
+    var app = initializeApp(firebaseConfig);
+    var db = getFirestore(app);
+    var auth = getAuth(app);
+
+    // ES5側から使えるよう最小APIをwindowにぶら下げる（compat風ラッパー）
+    window._db = {
+      collection:function(name){
+        return {
+          add:function(data){ return addDoc(collection(db,name), data); },
+          doc:function(id){
+            return {
+              set:function(data,opt){ return setDoc(doc(db,name,id), data, opt||{}); },
+              update:function(data){ return updateDoc(doc(db,name,id), data); },
+              get:function(){ return getDoc(doc(db,name,id)).then(function(s){
+                return { exists:s.exists(), data:function(){return s.data();}, id:s.id }; }); }
+            };
+          },
+          get:function(){  // 全件取得（users一覧用）
+            return getDocs(collection(db,name)).then(function(snap){
+              var docs=[]; snap.forEach(function(s){ docs.push({id:s.id, data:function(){return s.data();}}); });
+              return { empty:snap.empty, forEach:function(cb){ docs.forEach(cb); } };
+            });
+          },
+          orderBy:function(field,dir){
+            var _lim=30;
+            var chain={
+              limit:function(n){ _lim=n; return chain; },
+              get:function(){
+                var q=query(collection(db,name), orderBy(field,dir||"asc"), limit(_lim));
+                return getDocs(q).then(function(snap){
+                  var docs=[];
+                  snap.forEach(function(s){ docs.push({id:s.id, data:function(){return s.data();}}); });
+                  return { empty:snap.empty, forEach:function(cb){ docs.forEach(cb); } };
+                });
+              }
+            };
+            return chain;
+          }
+        };
+      }
+    };
+
+    window._auth = {
+      signIn:function(email,pw){ return signInWithEmailAndPassword(auth,email,pw); },
+      signOutUser:function(){ return signOut(auth); },
+      onAuthChanged:function(cb){ return onAuthStateChanged(auth, cb); },
+      // 管理者セッションを維持したまま新規ユーザーを作成（セカンダリappを使い捨て）
+      createUserSecondary:function(email,pw){
+        var secApp = initializeApp(firebaseConfig, "sec_"+Date.now());
+        var secAuth = getAuth(secApp);
+        return createUserWithEmailAndPassword(secAuth, email, pw).then(function(cred){
+          var uid = cred.user ? cred.user.uid : null;
+          return signOut(secAuth).catch(function(){}).then(function(){
+            return deleteApp(secApp).catch(function(){}).then(function(){ return uid; });
+          });
+        });
+      }
+    };
+
+    window.dispatchEvent(new Event("fbReady"));
+  }catch(e){
+    console.error("Firebase init failed:", e);
+  }
+</script>
+</body>
+</html>
